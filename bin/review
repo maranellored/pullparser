@@ -1,0 +1,33 @@
+#!/usr/bin/env ruby
+
+$:.unshift(File.join(File.dirname(__FILE__), '..', 'lib'))
+require 'optparse'
+require 'pull_parser'
+
+DEFAULT_URL = 'https://api.github.com/repos'
+
+def run()
+  options = {}
+
+  opt_parser = OptionParser.new do |opts|
+    opts.banner = 'Usage: review owner/repo [options]'
+
+    options[:url] = DEFAULT_URL
+    opts.on('-u', '--url', 'Specify the URL to use to search') do |url|
+      options[:url] = url
+    end
+  end
+
+  opt_parser.parse!
+
+  if ARGV.length != 1
+    puts opt_parser.banner()
+    exit(1)
+  end
+
+  PullParser::Parser.start(options[:url], ARGV[0])
+end
+
+if __FILE__ == $0
+  run()
+end
