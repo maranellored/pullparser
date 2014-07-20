@@ -113,8 +113,8 @@ module PullParser
 
     # Gets the filename from a unified diff addition/deletion line
     # The line is in either of the two forms below
-    # "--- /path/to/original"
-    # "+++ /path/to/new"
+    # "--- a/path/to/original"
+    # "+++ b/path/to/new"
     #
     # The git diff adds two leading characters to the file name, which can be
     # deleted. These are used to denote the two versions of the file - a and b

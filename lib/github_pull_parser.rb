@@ -3,6 +3,7 @@
 ##  The entry point into the parsing program. 
 ##  The bin/review program should call this with the command 
 ##  line arguments. 
+##  Customized for the GitHub API. 
 ##
 ################################################################################
 
@@ -13,9 +14,9 @@ require 'diff_parser'
 
 module PullParser
 
-  class Parser
+  class GitHubParser
 
-    def self.start(url, repo)
+    def self.start(url, repo, detailed_output)
       pull_url = construct_url(url, repo)
       http = HTTPHelper.new(pull_url)
       http.make_get_request
@@ -24,7 +25,7 @@ module PullParser
          raise "Received a non JSON response from #{url}. Did the API change?"
       end
 
-      analyze_pulls(http.get_response_body)
+      analyze_pulls(http.get_response_body, detailed_output)
     end
 
     def self.construct_url(url, repo)
@@ -32,7 +33,7 @@ module PullParser
       pull_url
     end
 
-    def self.analyze_pulls(body)
+    def self.analyze_pulls(body, detailed_output)
       json = JSON.parse(body)
 
       map = json.map {|pull| {:url => pull['html_url'], :diff => pull['diff_url'], :title => pull['title']} }
@@ -57,7 +58,12 @@ module PullParser
         result_map[url] = diff_map
       end
 
-      print_detailed_output(result_map)
+      if detailed_output
+        print_detailed_output(result_map)
+      else
+        print_output(result_map)
+      end
+
     end
 
     def self.print_detailed_output(map)
@@ -65,10 +71,14 @@ module PullParser
         puts "#{key} - " + (diff.length > 0 ? "Interesting" : "Not Interesting")
         if diff.length > 0
           puts "----- INTERESTING OBJECTS -----"
-          diff.each do |file, lines| 
-            lines.each {|line| puts "### File: #{file}\n### Line: #{line}\n"}
-          end
+          puts YAML.dump(diff)
         end
+      end
+    end
+
+    def self.print_output(map)
+      map.each do |key, diff|
+        puts "#{key} - " + (diff.length > 0 ? "Interesting" : "Not Interesting")
       end
     end
 
