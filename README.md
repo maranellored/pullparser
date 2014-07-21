@@ -37,11 +37,11 @@ $ bin/review owner/repo -d
 
 For example, run
 ```
-    $ bin/review ruby/ruby
-    $ bin/review ruby/ruby -d
+$ bin/review ruby/ruby
+$ bin/review ruby/ruby -d
 ```
 
 License
 -------
 
-See [LICENSE][LICENSE] file
+See [LICENSE] file
