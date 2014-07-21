@@ -8,8 +8,6 @@
 ##  Parsing other formats will lead to errors.
 ##
 ###############################################################################
-require 'yaml'
-require 'json'
 
 module PullParser
 
