@@ -3,8 +3,9 @@
 ##  Helps parse diffs.
 ##  Assumes the unified diff format as specified here
 ##  http://en.wikipedia.org/wiki/Diff#Unified_format
+##  Customized slightly for the git diff format. 
 ##
-##  Parsing other formats might lead to errors.
+##  Parsing other formats will lead to errors.
 ##
 ###############################################################################
 require 'yaml'
@@ -22,8 +23,10 @@ module PullParser
     REGEX_LINE_MODIFIED = /^[+-]{1}/
     REGEX_INTERESTING_ARRAY = [ /(^|\s)\/dev\/null(\s|$)/,
                                 /(^|\s)%x(\s|$)/,
+                                #/.%x./,
                                 /(^|\s)raise(\s|$)/,
                                 /(^|\s)\.write(\s|$)/,
+                                #/.\.write./,
                                 /(^|\s)exec(\s|$)/ ]
 
     # Scans the given diff file for interesting items.
@@ -46,7 +49,7 @@ module PullParser
       interesting_mods = []
 
       data.each_line do |line|
-        if line.scan(REGEX_FILE_START).size == 1
+        if is_start_of_new_file?(line)
           if interesting_mods.length > 0
             diff_map[file] = interesting_mods
           end
@@ -62,16 +65,15 @@ module PullParser
           next
         end
 
-        if line.scan(REGEX_FILE_DEL).size == 1
+        if is_deleted_file?(line)
           # A file was deleted!
           old_file = get_file(line)
           next
         end
 
-        if line.scan(REGEX_FILE_ADD).size == 1
+        if is_new_file?(line)
           # A file was added.
           new_file = get_file(line)
-          file = get_current_file(old_file, new_file)
 
           # Check if the file is in the spec directory
           spec_file = is_file_in_spec_dir?(new_file)
@@ -81,16 +83,16 @@ module PullParser
             spec_file |= is_file_in_spec_dir?(old_file)
           end
 
-
           # Check if either the old/new file is a Gemfile or a gemspec
           if is_gem_file?(old_file) or is_gem_file?(new_file)
             gem_file = true
           end
 
+          file = get_current_file(old_file, new_file)
           next
         end
 
-        if line.scan(REGEX_LINE_MODIFIED).size == 1
+        if is_modified_line?(line)
           if gem_file
             interesting_mods << line
             next
@@ -108,7 +110,52 @@ module PullParser
         diff_map[file] = interesting_mods
       end
 
-      return diff_map
+      diff_map
+    end
+
+    # Checks if the line represents the start of a new file.
+    # In a git diff this is represented using the following format
+    # diff --git a/filename b/filename
+    def is_start_of_new_file?(line)
+      if line.scan(REGEX_FILE_START).size == 1
+        return true
+      end
+
+      false
+    end
+
+    # Checks if the given line represents a file addition. 
+    # In a git diff, this is represented using the following format
+    # +++ a/path/to/file
+    def is_new_file?(line)
+      if line.scan(REGEX_FILE_ADD).size == 1
+        return true
+      end
+
+      false
+    end
+
+    # Checks if the given line represents a file deletion.
+    # In a git diff this is represented using the following format
+    # --- a/path/to/file
+    def is_deleted_file?(line)
+      if line.scan(REGEX_FILE_DEL).size == 1
+        return true
+      end
+
+      false
+    end
+
+    # Checks if the given line is either a new or a deleted line
+    # In a git diff this is represented using the following format
+    # +  text
+    # - text
+    def is_modified_line?(line)
+      if line.scan(REGEX_LINE_MODIFIED).size == 1
+        return true
+      end
+
+      false
     end
 
     # Gets the filename from a unified diff addition/deletion line
@@ -128,7 +175,7 @@ module PullParser
         return nil
       end
 
-      return git_string[2..-1]
+      git_string[2..-1]
     end
 
     # Checks if the file is from the spec directory
@@ -140,7 +187,7 @@ module PullParser
         end
       end
 
-      return false
+      false
     end
 
     # Checks the filename to see if it is a Gemfile
@@ -156,7 +203,8 @@ module PullParser
           return true
         end
       end
-      return false
+
+      false
     end
 
     # Retrieves the current filename that is being modified.
@@ -167,7 +215,7 @@ module PullParser
       # Either one can be nil but not both. 
       # If both are not nil, they have to be equal. 
       # return the old_file if its not null
-      return old_file.nil? ? new_file : old_file
+      old_file.nil? ? new_file : old_file
     end
 
     # Checks if the given line is interesting.
@@ -180,7 +228,7 @@ module PullParser
         end
       end
 
-      return false
+      false
     end
 
   end  # End of class

@@ -61,4 +61,64 @@ describe PullParser::DiffParser do
       expect(@diff_parser.is_gem_file?('.gemspecification')).not_to be
     end
   end
+
+  describe '#is_file_in_spec_dir?' do
+    it 'checks if the top level directory is a spec directory' do
+      expect(@diff_parser.is_file_in_spec_dir?('spec/bla/foo')).to be
+      expect(@diff_parser.is_file_in_spec_dir?('specification/baz')).not_to be
+      expect(@diff_parser.is_file_in_spec_dir?('/spec/foo/bar_spec')).not_to be
+      expect(@diff_parser.is_file_in_spec_dir?('foo/bar/spec/hello')).not_to be
+    end
+  end
+
+  describe '#get_file' do
+    it 'retrieves the file name if its not /dev/null' do
+      expect(@diff_parser.get_file('+++ a/path/to/file')).to eql('path/to/file')
+      expect(@diff_parser.get_file('--- /path/to/file')).not_to eql('/path/to/file')
+      expect(@diff_parser.get_file('+ /dev/null')).to eql(nil)
+
+      expect {@diff_parser.get_file('/path/to/file')}.to raise_error
+    end
+  end
+
+  describe '#is_start_of_new_file?' do
+    it 'checks if the given line denotes start of a new file' do
+      expect(@diff_parser.is_start_of_new_file?('diff --git a/file b/file')).to be
+      expect(@diff_parser.is_start_of_new_file?('diff --git bla foo bar')).to be
+      expect(@diff_parser.is_start_of_new_file?(' diff --git a/foo b/foo')).not_to be
+      expect(@diff_parser.is_start_of_new_file?('diff -git a/bar b/bar')).not_to be
+    end
+  end
+
+  describe '#is_new_file?' do
+    it 'checks if this line represents a new file' do
+      expect(@diff_parser.is_new_file?('+++ /a/file')).to be
+      expect(@diff_parser.is_new_file?('+++    /another/file')).to be
+      expect(@diff_parser.is_new_file?('--- not/a/file/start')).not_to be
+      expect(@diff_parser.is_new_file?('+ a/modified/line')).not_to be
+    end
+  end
+
+  describe '#is_deleted_file?' do
+    it 'checks if this line represents a deleted file' do
+      expect(@diff_parser.is_deleted_file?('--- deleted/file')).to be
+      expect(@diff_parser.is_deleted_file?('---     another/deletion')).to be
+      expect(@diff_parser.is_deleted_file?('-- this/should/be/false')).not_to be
+      expect(@diff_parser.is_deleted_file?('-+/random/string')).not_to be
+    end
+  end
+
+  describe '#is_modified_line?' do
+    it 'checks if this line is a modified line' do
+      expect(@diff_parser.is_modified_line?('+ Text')).to be
+      expect(@diff_parser.is_modified_line?('- Text')).to be
+      expect(@diff_parser.is_modified_line?('+  Text')).to be
+      expect(@diff_parser.is_modified_line?('-  Text')).to be
+      expect(@diff_parser.is_modified_line?('+Text')).to be
+      expect(@diff_parser.is_modified_line?('-Text')).to be
+
+      expect(@diff_parser.is_modified_line?('T+E-X-T')).not_to be
+      expect(@diff_parser.is_modified_line?('/is/false')).not_to be
+    end
+  end
 end

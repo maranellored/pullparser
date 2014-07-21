@@ -13,10 +13,11 @@ The pull requests are analyzed for interesting words. Some of the interesting wo
     - exec
     - /dev/null
 
-Changes to any file in the spec/ directory are discarded.
+Changes to any file in the spec/ directory in the project root are discarded.
 
-NOTE: %x and .write are a little different. They can occur as substrings of an expression. 
-For eg. puts(%x('ls'))
+**NOTE**: %x and .write are a little different. They can occur as substrings of an expression. 
+For eg. puts(%x('ls')) or f.write('hello, world')
+
 This is ignored in the current use case, but the regex to match this can be easily modified to consider 
 these cases. 
 
@@ -24,15 +25,21 @@ Usage
 -----
 
 To use, run the following
-    $ bin/review owner/repo
+```
+$ bin/review owner/repo
+```
 
 By default, the program only prints if the objects are interesting or not. If you are interested in learning more
 about the interesting pull requests and what data they contain, run the script with the '-d' flag
-    $ bin/review owner/repo -d
+```
+$ bin/review owner/repo -d
+```
 
 For example, run
+```
     $ bin/review ruby/ruby
     $ bin/review ruby/ruby -d
+```
 
 License
 -------
